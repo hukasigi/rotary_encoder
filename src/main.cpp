@@ -30,11 +30,14 @@ void setup() {
     pinMode(PIN_ROTARY_B, INPUT_PULLUP);
     attachInterrupt(PIM_ROTARY_A, detect_turn_a, FALLING);
 
+    // timer0使用して、分周80 1カウント1us
     timer = timerBegin(0, 80, true);
     timerAttachInterrupt(timer, &onTimer, true);
 
+    // 1,000,000us=1秒
     timerAlarmWrite(timer, 1000000, true);
 
+    // timer開始
     timerAlarmEnable(timer);
 }
 
