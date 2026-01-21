@@ -16,6 +16,10 @@ void IRAM_ATTR detect_turn_a() {
     value_rotary_b ? rolls++ : rolls--;
 }
 
+void IRAM_ATTR onTimer() {
+    rolls = 0;
+}
+
 hw_timer_t* timer = NULL;
 
 // timer = timerBegin(0,80,true);
@@ -25,6 +29,13 @@ void setup() {
     pinMode(PIM_ROTARY_A, INPUT_PULLUP);
     pinMode(PIN_ROTARY_B, INPUT_PULLUP);
     attachInterrupt(PIM_ROTARY_A, detect_turn_a, FALLING);
+
+    timer = timerBegin(0, 80, true);
+    timerAttachInterrupt(timer, &onTimer, true);
+
+    timerAlarmWrite(timer, 1000000, true);
+
+    timerAlarmEnable(timer);
 }
 
 void loop() {
