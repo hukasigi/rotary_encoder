@@ -63,7 +63,7 @@ void loop() {
     int pwm = abs(control);
     pwm     = constrain(pwm, 0, 255);
 
-    if (abs(error) < 5) pwm = 0;
+    if (abs(error) < 3) pwm = 0;
 
     ledcWrite(0, pwm);
 
