@@ -5,7 +5,7 @@ const int8_t  PIN_ROTARY_B = 27;
 const int8_t  PIN_PWM      = 25;
 const int8_t  PIN_DIR      = 33;
 const int16_t target       = 1000;
-const float   KP           = 0.5;
+const double  KP           = 0.5;
 
 volatile long pos            = 0;
 volatile bool value_rotary_b = 0;
