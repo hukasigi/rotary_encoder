@@ -79,8 +79,7 @@ void loop() {
     double control = KP * error + KI * integral;
     pwm += control; // PWMを少しずつ動かす
 
-    if (pwm > 255) pwm = 255;
-    if (pwm < 0) pwm = 0;
+    pwm = constrain(pwm, 0, 255);
 
     ledcWrite(0, pwm);
 
