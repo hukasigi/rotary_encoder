@@ -46,17 +46,21 @@ void loop() {
 
     int error = target - now;
 
-    if (abs(error) < 100) {
-        integral += error;
-    }
     integral = constrain(integral, -1000, 1000);
 
     double control = KP * error + KI * integral;
 
-    bool dir = (error > 0);
+    // 出力が飽和してないときだけ積分
+    if ((abs(control) < 255) && (abs(error) < 100)) {
+        integral += error;
+    }
+
+    control = KP * error + KI * integral;
+
+    bool dir = (control > 0);
     digitalWrite(PIN_DIR, dir);
 
-    int pwm = abs(error * KP);
+    int pwm = abs(control);
     pwm     = constrain(pwm, 0, 255);
 
     if (abs(error) < 5) pwm = 0;
