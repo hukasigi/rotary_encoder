@@ -4,10 +4,10 @@ const int8_t  PIM_ROTARY_A = 26;
 const int8_t  PIN_ROTARY_B = 27;
 const int8_t  PIN_PWM      = 25;
 const int8_t  PIN_DIR      = 33;
-const double  TARGET_RPM   = 90.;
+const double  TARGET_RPM   = 50.;
 const int16_t RESOLUTION   = 2048;
 
-const double  KP             = 0.5;
+const double  KP             = 0.1;
 int           pwm            = 0;
 volatile long rolls          = 0;
 volatile long rolls_is       = 0;
@@ -22,8 +22,10 @@ portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 // 立ち上がったときのB相のを見て回転方向を読み取る
 // HIGHだったらcw(),LOWだったらccw()のように
 void IRAM_ATTR detect_turn_a() {
+    portENTER_CRITICAL_ISR(&timerMux);
     value_rotary_b = digitalRead(PIN_ROTARY_B);
     value_rotary_b ? rolls++ : rolls--;
+    portEXIT_CRITICAL_ISR(&timerMux);
 }
 
 void IRAM_ATTR onTimer() {
@@ -73,5 +75,5 @@ void loop() {
 
     ledcWrite(0, pwm);
 
-    Serial.printf("RPM: %.1f  PWM: %d\n ERROR : %d\n", rpm, pwm, error);
+    Serial.printf("RPM: %.1f  PWM: %d ERROR : %.1f\n", rpm, pwm, error);
 }
