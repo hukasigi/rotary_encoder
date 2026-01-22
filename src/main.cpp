@@ -5,12 +5,15 @@ const int8_t  PIN_ROTARY_B = 27;
 const int8_t  PIN_PWM      = 25;
 const int8_t  PIN_DIR      = 33;
 const int16_t target       = 1000;
-const double  KP           = 0.5;
+
+const double KP = 0.5;
+const double KI = 0.005;
 
 volatile long pos            = 0;
 volatile bool value_rotary_b = 0;
 static int    cnt            = 0;
 int           error          = 0;
+int           integral       = 0;
 
 hw_timer_t* timer = NULL;
 
@@ -42,6 +45,13 @@ void loop() {
     interrupts();
 
     int error = target - now;
+
+    if (abs(error) < 100) {
+        integral += error;
+    }
+    integral = constrain(integral, -1000, 1000);
+
+    double control = KP * error + KI * integral;
 
     bool dir = (error > 0);
     digitalWrite(PIN_DIR, dir);
