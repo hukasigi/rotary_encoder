@@ -7,8 +7,13 @@ const int8_t  PIN_DIR      = 33;
 const double  TARGET_RPM   = 50.;
 const int16_t RESOLUTION   = 2048;
 
-const double  KP             = 0.1;
-int           pwm            = 0;
+const double KP = 0.2;
+const double KI = 0.005;
+
+int    pwm      = 0;
+double rpm_f    = 0;
+double integral = 0;
+
 volatile long rolls          = 0;
 volatile long rolls_is       = 0;
 volatile bool value_rotary_b = 0;
@@ -51,8 +56,8 @@ void setup() {
     timer = timerBegin(0, 80, true);
     timerAttachInterrupt(timer, &onTimer, true);
 
-    // 1,000,000us=1秒
-    timerAlarmWrite(timer, 100000, true);
+    // 10,000
+    timerAlarmWrite(timer, 10000, true);
 
     // timer開始
     timerAlarmEnable(timer);
@@ -64,11 +69,15 @@ void loop() {
     r = rolls_is;
     portEXIT_CRITICAL(&timerMux);
 
-    double rpm = (double)r / RESOLUTION * 60. * 10.;
+    double rpm = (double)r / RESOLUTION * 60. * 100.;
 
-    double error = TARGET_RPM - rpm;
+    rpm_f = rpm_f * 0.7 + rpm * 0.3;
 
-    pwm += KP * error;
+    double error = TARGET_RPM - rpm_f;
+
+    integral += error; // 誤差をためる
+    double control = KP * error + KI * integral;
+    pwm += control; // PWMを少しずつ動かす
 
     if (pwm > 255) pwm = 255;
     if (pwm < 0) pwm = 0;
