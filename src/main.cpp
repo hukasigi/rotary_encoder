@@ -19,7 +19,6 @@ volatile long rolls_is       = 0;
 volatile bool value_rotary_b = 0;
 volatile long pos            = 0;
 volatile long speed          = 0;
-// volatile long lastPos        = 0;
 
 hw_timer_t*  timer    = NULL;
 portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
@@ -56,7 +55,7 @@ void setup() {
     timer = timerBegin(0, 80, true);
     timerAttachInterrupt(timer, &onTimer, true);
 
-    // 10,000
+    // 10,000 10ms
     timerAlarmWrite(timer, 10000, true);
 
     // timer開始
