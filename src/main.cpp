@@ -8,6 +8,7 @@ const int16_t target       = 1000;
 
 const double KP = 0.5;
 const double KI = 0.005;
+const double KD = 0.001;
 
 volatile long pos            = 0;
 volatile bool value_rotary_b = 0;
