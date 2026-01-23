@@ -1,25 +1,26 @@
 #include <Arduino.h>
 
-const int8_t  PIM_ROTARY_A = 26;
-const int8_t  PIN_ROTARY_B = 27;
-const int8_t  PIN_PWM      = 25;
-const int8_t  PIN_DIR      = 33;
-const int16_t target       = 1000;
-const double  DT           = 0.01;
+const int8_t PIN_ROTARY_A = 26;
+const int8_t PIN_ROTARY_B = 27;
+const int8_t PIN_PWM      = 25;
+const int8_t PIN_DIR      = 33;
+
+// 目的角/2048
+const int16_t target = 1000;
+// デルタ秒
+const double DT = 0.01;
 
 const double KP = 0.3;
-const double KI = 0.005;
-const double KD = 0.001;
+const double KI = 0.002;
+const double KD = 0.005;
 
 volatile long pos            = 0;
 volatile bool value_rotary_b = 0;
-static int    lastPos        = 0;
-int           lastError      = 0;
+static long   lastPos        = 0;
 double        integral       = 0;
 
 hw_timer_t* timer = NULL;
 
-// 一秒周期のタイマー割り込み カウントリセット
 // 立ち上がったときのB相のを見て回転方向を読み取る
 // HIGHだったらcw(),LOWだったらccw()のように
 void IRAM_ATTR detect_turn_a() {
@@ -29,11 +30,11 @@ void IRAM_ATTR detect_turn_a() {
 
 void setup() {
     Serial.begin(115200);
-    pinMode(PIM_ROTARY_A, INPUT_PULLUP);
+    pinMode(PIN_ROTARY_A, INPUT_PULLUP);
     pinMode(PIN_ROTARY_B, INPUT_PULLUP);
     pinMode(PIN_DIR, OUTPUT);
 
-    attachInterrupt(PIM_ROTARY_A, detect_turn_a, FALLING);
+    attachInterrupt(PIN_ROTARY_A, detect_turn_a, FALLING);
 
     ledcAttachPin(PIN_PWM, 0);
     ledcSetup(0, 20000, 8);
@@ -74,6 +75,5 @@ void loop() {
     Serial.print("pos  ");
     Serial.println(now);
 
-    lastError = error;
     delay(10);
 }
