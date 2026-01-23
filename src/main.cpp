@@ -5,16 +5,17 @@ const int8_t  PIN_ROTARY_B = 27;
 const int8_t  PIN_PWM      = 25;
 const int8_t  PIN_DIR      = 33;
 const int16_t target       = 1000;
+const double  DT           = 0.01;
 
-const double KP = 0.5;
+const double KP = 0.3;
 const double KI = 0.005;
 const double KD = 0.001;
 
 volatile long pos            = 0;
 volatile bool value_rotary_b = 0;
-static int    cnt            = 0;
-int           error          = 0;
-int           integral       = 0;
+static int    lastPos        = 0;
+int           lastError      = 0;
+double        integral       = 0;
 
 hw_timer_t* timer = NULL;
 
@@ -47,16 +48,18 @@ void loop() {
 
     int error = target - now;
 
-    integral = constrain(integral, -1000, 1000);
+    double velocity   = (now - lastPos) / DT;
+    double derivative = -velocity;
+    lastPos           = now;
 
-    double control = KP * error + KI * integral;
+    double control = KP * error + KI * integral + KD * derivative;
 
     // 出力が飽和してないときだけ積分
     if ((abs(control) < 255) && (abs(error) < 100)) {
-        integral += error;
+        integral += error * DT;
     }
 
-    control = KP * error + KI * integral;
+    integral = constrain(integral, -1000, 1000);
 
     bool dir = (control > 0);
     digitalWrite(PIN_DIR, dir);
@@ -70,5 +73,7 @@ void loop() {
 
     Serial.print("pos  ");
     Serial.println(now);
+
+    lastError = error;
     delay(10);
 }
