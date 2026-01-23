@@ -14,10 +14,9 @@ const double KP = 0.2;
 const double KI = 0.005;
 const double KD = 0.001;
 
-int    pwm       = 0;
-double rpm_f     = 0;
-double lastError = 0;
-double integral  = 0;
+int    pwm_out  = 0;
+double rpm_f    = 0;
+double integral = 0;
 
 volatile long rolls          = 0;
 volatile long rolls_is       = 0;
@@ -25,7 +24,8 @@ volatile bool value_rotary_b = 0;
 volatile long pos            = 0;
 volatile long speed          = 0;
 
-static unsigned long last = 0;
+static unsigned long last    = 0;
+static double        lastRpm = 0;
 
 hw_timer_t*  timer    = NULL;
 portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
@@ -85,23 +85,23 @@ void loop() {
         rpm_f = rpm_f * RPM_FIL_PER + rpm * RPM_RAW_PER;
 
         double error      = TARGET_RPM - rpm_f;
-        double derivative = (error - lastError) / DT;
+        double derivative = -(rpm_f - lastRpm) / DT;
+        lastRpm           = rpm_f;
 
-        if (abs(pwm) < 255) { // 飽和してない時だけ積分
+        if (abs(pwm_out) < 255) { // 飽和してない時だけ積分
             integral += error * DT;
         }
 
         integral       = constrain(integral, -500, 500);
         double control = KP * error + KI * integral + KD * derivative;
-        pwm            = control;
+        pwm_out        = control;
 
         bool dir = (control >= 0);
         digitalWrite(PIN_DIR, dir);
-        pwm = constrain(abs(control), 0, 255);
+        pwm_out = constrain(abs(control), 0, 255);
 
-        ledcWrite(0, pwm);
+        ledcWrite(0, pwm_out);
 
-        Serial.printf("RPM: %.1f  PWM: %d ERROR : %.1f\n", rpm, pwm, error);
-        lastError = error;
+        Serial.printf("RPM: %.1f  PWM: %d ERROR : %.1f\n", rpm, pwm_out, error);
     }
 }
