@@ -1,18 +1,23 @@
 #include <Arduino.h>
 
-const int8_t  PIM_ROTARY_A = 26;
-const int8_t  PIN_ROTARY_B = 27;
-const int8_t  PIN_PWM      = 25;
-const int8_t  PIN_DIR      = 33;
-const double  TARGET_RPM   = 50.;
-const int16_t RESOLUTION   = 2048;
+const int8_t PIM_ROTARY_A = 26;
+const int8_t PIN_ROTARY_B = 27;
+const int8_t PIN_PWM      = 25;
+const int8_t PIN_DIR      = 33;
+
+const double  RPM_FIL_PER = 0.7;
+const double  RPM_RAW_PER = 0.3;
+const double  TARGET_RPM  = 50.;
+const int16_t RESOLUTION  = 2048;
 
 const double KP = 0.2;
 const double KI = 0.005;
+const double KD = 0.001;
 
-int    pwm      = 0;
-double rpm_f    = 0;
-double integral = 0;
+int    pwm       = 0;
+double rpm_f     = 0;
+double lastError = 0;
+double integral  = 0;
 
 volatile long rolls          = 0;
 volatile long rolls_is       = 0;
@@ -70,12 +75,13 @@ void loop() {
 
     double rpm = (double)r / RESOLUTION * 60. * 100.;
 
-    rpm_f = rpm_f * 0.7 + rpm * 0.3;
+    rpm_f = rpm_f * RPM_FIL_PER + rpm * RPM_RAW_PER;
 
-    double error = TARGET_RPM - rpm_f;
+    double error      = TARGET_RPM - rpm_f;
+    double derivative = error - lastError;
 
     integral += error; // 誤差をためる
-    double control = KP * error + KI * integral;
+    double control = KP * error + KI * integral + KD * derivative;
     pwm += control; // PWMを少しずつ動かす
 
     pwm = constrain(pwm, 0, 255);
@@ -83,4 +89,5 @@ void loop() {
     ledcWrite(0, pwm);
 
     Serial.printf("RPM: %.1f  PWM: %d ERROR : %.1f\n", rpm, pwm, error);
+    lastError = error;
 }
