@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-const int8_t PIM_ROTARY_A = 26;
+const int8_t PIN_ROTARY_A = 26;
 const int8_t PIN_ROTARY_B = 27;
 const int8_t PIN_PWM      = 25;
 const int8_t PIN_DIR      = 33;
@@ -25,6 +25,8 @@ volatile bool value_rotary_b = 0;
 volatile long pos            = 0;
 volatile long speed          = 0;
 
+static unsigned long last = 0;
+
 hw_timer_t*  timer    = NULL;
 portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 // 一秒周期のタイマー割り込み カウントリセット
@@ -47,14 +49,14 @@ void IRAM_ATTR onTimer() {
 
 void setup() {
     Serial.begin(115200);
-    pinMode(PIM_ROTARY_A, INPUT_PULLUP);
+    pinMode(PIN_ROTARY_A, INPUT_PULLUP);
     pinMode(PIN_ROTARY_B, INPUT_PULLUP);
     pinMode(PIN_DIR, OUTPUT);
 
     ledcSetup(0, 20000, 8);
     ledcAttachPin(PIN_PWM, 0);
 
-    attachInterrupt(PIM_ROTARY_A, detect_turn_a, FALLING);
+    attachInterrupt(PIN_ROTARY_A, detect_turn_a, FALLING);
 
     // timer0使用して、分周80 1カウント1us
     timer = timerBegin(0, 80, true);
@@ -68,26 +70,38 @@ void setup() {
 }
 
 void loop() {
-    long r;
-    portENTER_CRITICAL(&timerMux);
-    r = rolls_is;
-    portEXIT_CRITICAL(&timerMux);
+    unsigned long now_t = micros();
 
-    double rpm = (double)r / RESOLUTION * 60. * 100.;
+    if (now_t - last >= 10000) { // 10ms
+        double DT = (now_t - last) / 1e6;
+        last      = now_t;
+        long r;
+        portENTER_CRITICAL(&timerMux);
+        r = rolls_is;
+        portEXIT_CRITICAL(&timerMux);
 
-    rpm_f = rpm_f * RPM_FIL_PER + rpm * RPM_RAW_PER;
+        double rpm = (double)r / RESOLUTION * 60. / DT;
 
-    double error      = TARGET_RPM - rpm_f;
-    double derivative = error - lastError;
+        rpm_f = rpm_f * RPM_FIL_PER + rpm * RPM_RAW_PER;
 
-    integral += error; // 誤差をためる
-    double control = KP * error + KI * integral + KD * derivative;
-    pwm += control; // PWMを少しずつ動かす
+        double error      = TARGET_RPM - rpm_f;
+        double derivative = (error - lastError) / DT;
 
-    pwm = constrain(pwm, 0, 255);
+        if (abs(pwm) < 255) { // 飽和してない時だけ積分
+            integral += error * DT;
+        }
 
-    ledcWrite(0, pwm);
+        integral       = constrain(integral, -500, 500);
+        double control = KP * error + KI * integral + KD * derivative;
+        pwm            = control; // PWMを少しずつ動かす
 
-    Serial.printf("RPM: %.1f  PWM: %d ERROR : %.1f\n", rpm, pwm, error);
-    lastError = error;
+        bool dir = (control >= 0);
+        digitalWrite(PIN_DIR, dir);
+        pwm = constrain(abs(control), 0, 255);
+
+        ledcWrite(0, pwm);
+
+        Serial.printf("RPM: %.1f  PWM: %d ERROR : %.1f\n", rpm, pwm, error);
+        lastError = error;
+    }
 }
