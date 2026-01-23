@@ -19,13 +19,16 @@ volatile bool value_rotary_b = 0;
 static long   lastPos        = 0;
 double        integral       = 0;
 
-hw_timer_t* timer = NULL;
+hw_timer_t*  timer    = NULL;
+portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 
 // 立ち上がったときのB相のを見て回転方向を読み取る
 // HIGHだったらcw(),LOWだったらccw()のように
 void IRAM_ATTR detect_turn_a() {
-    value_rotary_b = digitalRead(PIN_ROTARY_B);
-    value_rotary_b ? pos-- : pos++;
+    bool b = gpio_get_level((gpio_num_t)PIN_ROTARY_B);
+    portENTER_CRITICAL_ISR(&timerMux);
+    b ? pos-- : pos++;
+    portEXIT_CRITICAL_ISR(&timerMux);
 }
 
 void setup() {
@@ -41,39 +44,44 @@ void setup() {
 }
 
 void loop() {
-    int now = 0;
+    static uint32_t last = millis();
+    if (millis() - last >= 10) {
+        last += 10;
 
-    noInterrupts();
-    now = pos;
-    interrupts();
+        long now;
+        portENTER_CRITICAL(&timerMux);
+        now = pos;
+        portEXIT_CRITICAL(&timerMux);
 
-    int error = target - now;
+        int error = target - now;
 
-    double velocity   = (now - lastPos) / DT;
-    double derivative = -velocity;
-    lastPos           = now;
+        static double vel_f = 0;
 
-    double control = KP * error + KI * integral + KD * derivative;
+        double vel        = (now - lastPos) / DT;
+        vel_f             = 0.7 * vel_f + 0.3 * vel;
+        double derivative = -vel_f;
 
-    // 出力が飽和してないときだけ積分
-    if ((abs(control) < 255) && (abs(error) < 100)) {
-        integral += error * DT;
+        lastPos = now;
+
+        double control = KP * error + KI * integral + KD * derivative;
+
+        if (abs(control) < 255) {
+            integral += error * DT;
+        }
+
+        integral = constrain(integral, -500, 500);
+
+        bool dir = (control > 0);
+        digitalWrite(PIN_DIR, dir);
+
+        int pwm = abs(control);
+        pwm     = constrain(pwm, 0, 255);
+
+        if (abs(error) < 3) pwm = 0;
+
+        ledcWrite(0, pwm);
+
+        Serial.print("pos  ");
+        Serial.println(now);
     }
-
-    integral = constrain(integral, -1000, 1000);
-
-    bool dir = (control > 0);
-    digitalWrite(PIN_DIR, dir);
-
-    int pwm = abs(control);
-    pwm     = constrain(pwm, 0, 255);
-
-    if (abs(error) < 3) pwm = 0;
-
-    ledcWrite(0, pwm);
-
-    Serial.print("pos  ");
-    Serial.println(now);
-
-    delay(10);
 }
