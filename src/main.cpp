@@ -34,7 +34,7 @@ portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 // HIGHだったらcw(),LOWだったらccw()のように
 void IRAM_ATTR detect_turn_a() {
     portENTER_CRITICAL_ISR(&timerMux);
-    value_rotary_b = digitalRead(PIN_ROTARY_B);
+    value_rotary_b = gpio_get_level((gpio_num_t)PIN_ROTARY_B);
     value_rotary_b ? rolls++ : rolls--;
     portEXIT_CRITICAL_ISR(&timerMux);
 }
@@ -93,7 +93,7 @@ void loop() {
 
         integral       = constrain(integral, -500, 500);
         double control = KP * error + KI * integral + KD * derivative;
-        pwm            = control; // PWMを少しずつ動かす
+        pwm            = control;
 
         bool dir = (control >= 0);
         digitalWrite(PIN_DIR, dir);
