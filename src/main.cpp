@@ -7,8 +7,6 @@ const int8_t PIN_DIR      = 33;
 
 // 目的角/2048
 const int16_t target = 1000;
-// デルタ秒
-const double DT = 0.01;
 
 const double KP = 0.3;
 const double KI = 0.002;
@@ -44,9 +42,11 @@ void setup() {
 }
 
 void loop() {
-    static uint32_t last = millis();
-    if (millis() - last >= 10) {
-        last += 10;
+    static unsigned long last  = micros();
+    unsigned long        now_t = micros();
+    if (now_t - last >= 10000) {
+        double DT = (now_t - last) / 1e6;
+        last      = now_t;
 
         long now;
         portENTER_CRITICAL(&timerMux);
