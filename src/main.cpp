@@ -82,13 +82,21 @@ void loop() {
 
         double rpm = (double)r / RESOLUTION * 60. / DT;
 
+        // 回転数にフィルタをかけてなめらかにする
+        // rpm_f = 0.7 × 昔の値 + 0.3 × 今の値
         rpm_f = rpm_f * RPM_FIL_PER + rpm * RPM_RAW_PER;
 
-        double error      = TARGET_RPM - rpm_f;
+        // 目標値 - 実測値でエラーを出す
+        double error = TARGET_RPM - rpm_f;
+
+        // 回転数を時間で微分
+        // errorの微分だと目標rpmが変わったら急にD項が暴れる
         double derivative = -(rpm_f - lastRpm) / DT;
         lastRpm           = rpm_f;
 
-        if (abs(pwm_out) < 255) { // 飽和してない時だけ積分
+        double control_raw = KP * error + KI * integral + KD * derivative;
+        if (abs(control_raw) < 255) { // 飽和してない時だけ積分
+            // ズレが長時間つづいた分を足す
             integral += error * DT;
         }
 
