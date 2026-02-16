@@ -1,13 +1,12 @@
 #include <Arduino.h>
 
-const int8_t PIN_ROTARY_A = 26;
-const int8_t PIN_ROTARY_B = 27;
-const int8_t PIN_PWM      = 25;
-const int8_t PIN_DIR      = 33;
+const uint8_t PIN_ROTARY_A = 26;
+const uint8_t PIN_ROTARY_B = 27;
+const uint8_t PIN_PWM      = 25;
+const uint8_t PIN_DIR      = 33;
 
 // 目標位置
-const int16_t target   = 1000;
-const double  FILTER_D = 0.7;
+const int16_t target = 1000;
 
 const double KP = 0.3;
 const double KI = 0.002;
@@ -59,19 +58,10 @@ void loop() {
         誤差が狂ってしまう*/
         int error = target - pos_now;
 
-        static double vel_f = 0;
-
         double vel        = (pos_now - lastPos) / DT;
-        vel_f             = FILTER_D * vel_f + (1 - FILTER_D) * vel;
-        double derivative = -vel_f;
+        double derivative = -vel;
 
         lastPos = pos_now;
-
-        double control_raw = KP * error + KI * integral + KD * derivative;
-
-        if (abs(control_raw) < 255) {
-            integral += error * DT;
-        }
 
         integral = constrain(integral, -500, 500);
 
@@ -82,11 +72,6 @@ void loop() {
 
         int pwm = abs(control);
         pwm     = constrain(pwm, 0, 255);
-
-        if (abs(error) < 3) {
-            pwm      = 0;
-            integral = 0;
-        }
 
         ledcWrite(0, pwm);
 
