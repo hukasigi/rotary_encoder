@@ -7,12 +7,12 @@ const int8_t PIN_DIR      = 33;
 
 const double  RPM_FIL_PER = 0.7;
 const double  RPM_RAW_PER = 0.3;
-const double  TARGET_RPM  = 50.;
+const double  TARGET_RPM  = 200.;
 const int16_t RESOLUTION  = 2048;
 
-const double KP = 0.2;
-const double KI = 0.005;
-const double KD = 0.001;
+const double KP = 2.50;
+const double KI = 1.00;
+const double KD = 0.0005;
 
 int    pwm_out  = 0;
 double rpm_f    = 0;
@@ -102,9 +102,8 @@ void loop() {
 
         integral       = constrain(integral, -500, 500);
         double control = KP * error + KI * integral + KD * derivative;
-        pwm_out        = control;
 
-        bool dir = (control >= 0);
+        bool dir = (control <= 0);
         digitalWrite(PIN_DIR, dir);
         pwm_out = constrain(abs(control), 0, 255);
 
