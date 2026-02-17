@@ -5,12 +5,12 @@ const int8_t PIN_ROTARY_B = 27;
 const int8_t PIN_PWM      = 25;
 const int8_t PIN_DIR      = 33;
 
-const double TARGET_RPM = 400.;
+const double TARGET_RPM = 300.;
 const double RESOLUTION = 2048.;
 
-const double KP = 1.;
-const double KI = 2.;
-const double KD = 0.2;
+const double KP = 1.3;
+const double KI = 1.2;
+const double KD = 0.1;
 
 double du        = 0;
 double output    = 0;
