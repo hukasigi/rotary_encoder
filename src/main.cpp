@@ -94,7 +94,7 @@ void loop() {
 
         ledcWrite(0, output);
 
-        Serial.printf("RPM: %.1f  PWM: %d ERROR : %.1f\n", rpm, output, error);
+        Serial.printf("RPM: %.1f  PWM: %.1f ERROR : %.1f\n", rpm, output, error);
 
         pre_error = error;
         pre_prop  = prop;
