@@ -5,14 +5,14 @@ const int8_t PIN_ROTARY_B = 27;
 const int8_t PIN_PWM      = 25;
 const int8_t PIN_DIR      = 33;
 
-const double  TARGET_RPM = 200.;
-const int16_t RESOLUTION = 2048;
+const double TARGET_RPM = 400.;
+const double RESOLUTION = 2048.;
 
-const double KP = 0.7;
-const double KI = 0.30;
-const double KD = 0.0005;
+const double KP = 1.;
+const double KI = 2.;
+const double KD = 0.2;
 
-int    du        = 0;
+double du        = 0;
 double output    = 0;
 double integral  = 0;
 double deriv     = 0;
@@ -74,27 +74,26 @@ void loop() {
     unsigned long now_t = micros();
 
     if (now_t - last >= 10000) { // 10ms
-        double dt = (now_t - last) / 1e6;
+        double dt = (double)(now_t - last) / 1.e6;
         last      = now_t;
-        long r;
+        double r;
         portENTER_CRITICAL(&timerMux);
         r = rolls_is;
         portEXIT_CRITICAL(&timerMux);
 
-        double rpm = (double)r / RESOLUTION * 60. / dt;
+        double rpm = r / RESOLUTION * 60. / dt;
 
         // 目標値 - 実測値でエラーを出す
         double error = TARGET_RPM - rpm;
 
-        prop  = error - pre_error;
-        deriv = prop - pre_prop;
-        du    = KP * prop + KI * error * dt + KD * deriv;
+        double prop  = error - pre_error;
+        double deriv = prop - pre_prop;
+        double du    = KP * prop + KI * error * dt + KD * deriv;
         output += du;
-        output = constrain(output, 0, 255);
+        double clamped_output = constrain(abs(output), 0., 255.);
+        ledcWrite(0, clamped_output);
 
-        ledcWrite(0, output);
-
-        Serial.printf("RPM: %.1f  PWM: %.1f ERROR : %.1f\n", rpm, output, error);
+        Serial.printf("RPM: %.1f  PWM: %.1f ERROR : %.1f\n", rpm, clamped_output, error);
 
         pre_error = error;
         pre_prop  = prop;
