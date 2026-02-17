@@ -6,8 +6,8 @@ const uint8_t PIN_PWM      = 25;
 const uint8_t PIN_DIR      = 33;
 const uint8_t PWM_CHANNEL  = 0;
 
-const double INTEGRAL_MAX = 500.;
-const double INTEGRAL_MIN = -500.;
+const double INTEGRAL_MAX = 1000.;
+const double INTEGRAL_MIN = -1000.;
 
 const uint16_t FREQUENCY       = 20000;
 const uint8_t  RESOLUTION_BITS = 8;
@@ -34,9 +34,9 @@ portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 // 立ち上がったときのB相のを見て回転方向を読み取る
 // HIGHだったらcw(),LOWだったらccw()のように
 void IRAM_ATTR detect_turn_a() {
-    bool b_in = gpio_get_level((gpio_num_t)PIN_ROTARY_B);
     portENTER_CRITICAL_ISR(&timerMux);
-    b_in ? pos-- : pos++;
+    value_rotary_b = gpio_get_level((gpio_num_t)PIN_ROTARY_B);
+    value_rotary_b ? pos-- : pos++;
     portEXIT_CRITICAL_ISR(&timerMux);
 }
 
@@ -83,6 +83,6 @@ void loop() {
         ledcWrite(PWM_CHANNEL, pwm);
 
         Serial.print("pos  ");
-        Serial.println(pos_now);
+        Serial.printf("%d %d\n", pos_now, target);
     }
 }
