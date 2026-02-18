@@ -20,9 +20,9 @@ const uint16_t CONTROL_CYCLE = 2000;
 const int16_t angle  = 200;
 int           target = map(angle, 0, 360, 0, 2024);
 
-const double KP = 0.5;
-const double KI = 0.1;
-const double KD = 0.03;
+const double KP = 3.;
+const double KI = 0.;
+const double KD = 0.;
 
 volatile long pos            = 0;
 volatile bool value_rotary_b = 0;
@@ -42,7 +42,9 @@ void IRAM_ATTR detect_turn_a() {
 }
 
 void setup() {
-    Serial.begin(115200);
+    Serial.begin(115200); // put function declarations here:
+    int myFunction(int, int);
+
     pinMode(PIN_ROTARY_A, INPUT_PULLUP);
     pinMode(PIN_ROTARY_B, INPUT_PULLUP);
     pinMode(PIN_ROTARY_Z, INPUT_PULLUP);
@@ -65,6 +67,7 @@ void setup() {
         prevZ = nowZ;
     }
     ledcWrite(PWM_CHANNEL, 0);
+    Serial.println(pos);
     pos = 0;
     Serial.println("start");
 
@@ -96,7 +99,8 @@ void loop() {
 
         double control = KP * error + KI * integral + KD * derivative;
 
-        uint8_t pwm = constrain(abs(control), 0, 255);
+        uint8_t pwm = constrain(abs(control), 0., 255.);
+        if (pwm > 0 && pwm < 35) pwm = 35;
 
         digitalWrite(PIN_DIR, control > 0 ? HIGH : LOW);
         ledcWrite(PWM_CHANNEL, pwm);
