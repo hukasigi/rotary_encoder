@@ -21,8 +21,8 @@ const int16_t angle  = 200;
 int           target = map(angle, 0, 360, 0, 2048);
 
 const double KP = 3.;
-const double KI = 0.5;
-const double KD = 0.;
+const double KI = 0.0;
+const double KD = 0.01;
 
 volatile long pos            = 0;
 volatile bool value_rotary_b = 0;
@@ -100,9 +100,6 @@ void loop() {
         double control = KP * error + KI * integral + KD * derivative;
 
         uint8_t pwm = constrain(abs(control), 0., 255.);
-        if (abs(error) > 1) {
-            if (pwm < 50) pwm = 50;
-        }
 
         digitalWrite(PIN_DIR, control > 0 ? HIGH : LOW);
         ledcWrite(PWM_CHANNEL, pwm);
